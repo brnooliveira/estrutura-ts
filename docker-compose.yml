@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - '${DB_PORT}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      target: production
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      APP_PORT: ${APP_PORT}
+    ports:
+      - '${APP_PORT}:3000'
+    command: >
+      sh -c "npm run migration:run:prod &&
+             node dist/index.js"
+
+  app-dev:
+    build:
+      context: .
+      target: development
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    ports:
+      - '3000:3000'
+    command: >
+      sh -c "npm run migration:run &&
+             npm run dev"
+
+volumes:
+  db-data:
